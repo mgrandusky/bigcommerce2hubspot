@@ -18,8 +18,11 @@ async function authMiddleware(req, res, next) {
     const decoded = jwt.verify(token, config.admin.jwtSecret);
     
     // Get user from database
-    const database = await require('../../database').initializeDatabase();
-    const User = database.models.User;
+    if (!db.models || !db.models.User) {
+      return res.status(500).json({ error: 'Database not initialized' });
+    }
+
+    const User = db.models.User;
     const user = await User.findByPk(decoded.userId);
 
     if (!user || !user.isActive) {

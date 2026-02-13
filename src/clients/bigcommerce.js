@@ -185,25 +185,7 @@ class BigCommerceClient {
    * @returns {Number} - Status ID
    */
   getStatusId(statusName) {
-    const statusMap = {
-      'Incomplete': 0,
-      'Pending': 1,
-      'Shipped': 2,
-      'Partially Shipped': 3,
-      'Refunded': 4,
-      'Cancelled': 5,
-      'Declined': 6,
-      'Awaiting Payment': 7,
-      'Awaiting Pickup': 8,
-      'Awaiting Shipment': 9,
-      'Completed': 10,
-      'Awaiting Fulfillment': 11,
-      'Manual Verification Required': 12,
-      'Disputed': 13,
-      'Partially Refunded': 14,
-    };
-
-    return statusMap[statusName] || 1; // Default to Pending
+    return BC_STATUS_MAP[statusName] || 1; // Default to Pending
   }
 }
 

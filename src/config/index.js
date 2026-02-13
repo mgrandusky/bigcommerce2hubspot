@@ -71,7 +71,7 @@ const config = {
   // Admin interface configuration
   admin: {
     enabled: process.env.ADMIN_ENABLED !== 'false',
-    jwtSecret: process.env.JWT_SECRET || 'change-this-secret-in-production',
+    jwtSecret: process.env.JWT_SECRET,
     jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
   },
 };
@@ -88,12 +88,24 @@ function validateConfig() {
     required['HubSpot API Key or Access Token'] = null;
   }
 
+  // JWT secret is required if admin is enabled
+  if (config.admin.enabled && !config.admin.jwtSecret) {
+    required['JWT_SECRET (for admin API)'] = null;
+  }
+
   const missing = Object.entries(required)
     .filter(([, value]) => !value)
     .map(([key]) => key);
 
   if (missing.length > 0) {
     throw new Error(`Missing required configuration: ${missing.join(', ')}`);
+  }
+
+  // Warn about insecure configurations
+  if (config.nodeEnv === 'production') {
+    if (config.admin.enabled && config.admin.jwtSecret && config.admin.jwtSecret.length < 32) {
+      logger.warn('JWT secret is too short for production. Use at least 32 characters.');
+    }
   }
 }
 

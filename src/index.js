@@ -6,6 +6,8 @@ const logger = require('./utils/logger');
 const BigCommerceClient = require('./clients/bigcommerce');
 const { initializeDatabase, closeDatabase } = require('./database');
 const { initializeQueues, closeQueues } = require('./queue');
+const syncLogService = require('./services/syncLog');
+const mappingService = require('./services/mapping');
 const adminApi = require('./admin');
 
 // Validate configuration on startup
@@ -19,8 +21,11 @@ try {
 
 // Initialize database
 initializeDatabase()
-  .then(() => {
+  .then(async () => {
     logger.info('Database initialized successfully');
+    // Initialize services that depend on database
+    await syncLogService.initialize();
+    await mappingService.initialize();
   })
   .catch((error) => {
     logger.warn('Database initialization failed, continuing without database', {

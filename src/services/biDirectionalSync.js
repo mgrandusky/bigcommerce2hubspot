@@ -2,6 +2,7 @@ const BigCommerceClient = require('../clients/bigcommerce');
 const HubSpotClient = require('../clients/hubspot');
 const logger = require('../utils/logger');
 const syncLogService = require('./syncLog');
+const mappingService = require('./mapping');
 
 /**
  * Service for bi-directional synchronization
@@ -105,7 +106,7 @@ class BiDirectionalSyncService {
       }
 
       // Map deal stage to BigCommerce order status
-      const orderStatus = this.mapDealStageToOrderStatus(deal.properties.dealstage);
+      const orderStatus = mappingService.getDealStageToOrderStatus(deal.properties.dealstage);
       
       if (!orderStatus) {
         logger.warn(`No status mapping for deal stage: ${deal.properties.dealstage}`);
@@ -199,23 +200,6 @@ class BiDirectionalSyncService {
       company: props.company,
       // Add more field mappings as needed
     };
-  }
-
-  /**
-   * Map HubSpot deal stage to BigCommerce order status
-   * This mapping should be configurable via admin interface
-   */
-  mapDealStageToOrderStatus(dealStage) {
-    const stageMapping = {
-      'qualifiedtobuy': 'Pending',
-      'presentationscheduled': 'Awaiting Payment',
-      'decisionmakerboughtin': 'Awaiting Fulfillment',
-      'contractsent': 'Awaiting Shipment',
-      'closedwon': 'Shipped',
-      'closedlost': 'Cancelled',
-    };
-
-    return stageMapping[dealStage] || null;
   }
 
   /**

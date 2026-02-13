@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { generateToken, hashPassword, comparePassword } = require('../middleware/auth');
 const logger = require('../../utils/logger');
+const { db } = require('../../database');
 
 /**
  * POST /admin/auth/login
@@ -16,8 +17,11 @@ router.post('/login', async (req, res) => {
     }
 
     // Get user from database
-    const database = await require('../../database').initializeDatabase();
-    const User = database.models.User;
+    if (!db.models || !db.models.User) {
+      return res.status(500).json({ error: 'Database not initialized' });
+    }
+
+    const User = db.models.User;
     const user = await User.findOne({ where: { email } });
 
     if (!user || !user.isActive) {
@@ -64,8 +68,11 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'Email and password required' });
     }
 
-    const database = await require('../../database').initializeDatabase();
-    const User = database.models.User;
+    if (!db.models || !db.models.User) {
+      return res.status(500).json({ error: 'Database not initialized' });
+    }
+
+    const User = db.models.User;
 
     // Check if any users exist
     const userCount = await User.count();

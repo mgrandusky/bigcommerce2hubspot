@@ -52,7 +52,10 @@ router.get('/stats', async (req, res) => {
  */
 router.get('/:id', async (req, res) => {
   try {
-    await syncLogService.initialize();
+    if (!syncLogService.SyncLog) {
+      return res.status(500).json({ error: 'Sync log service not initialized' });
+    }
+
     const log = await syncLogService.SyncLog.findByPk(req.params.id);
 
     if (!log) {
@@ -72,7 +75,10 @@ router.get('/:id', async (req, res) => {
  */
 router.post('/:id/retry', async (req, res) => {
   try {
-    await syncLogService.initialize();
+    if (!syncLogService.SyncLog) {
+      return res.status(500).json({ error: 'Sync log service not initialized' });
+    }
+
     const log = await syncLogService.SyncLog.findByPk(req.params.id);
 
     if (!log) {

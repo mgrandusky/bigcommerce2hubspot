@@ -1,18 +1,30 @@
 const { db } = require('../database');
 const logger = require('../utils/logger');
 
+let dbInstance = null;
+
 class SyncLogService {
   constructor() {
     this.SyncLog = null;
+    this.initialized = false;
   }
 
   /**
-   * Initialize the service with database models
+   * Initialize the service with database models (call once at startup)
    */
   async initialize() {
+    if (this.initialized) {
+      return;
+    }
+
     try {
-      const database = await require('../database').initializeDatabase();
-      this.SyncLog = database.models.SyncLog;
+      if (!dbInstance) {
+        const database = await require('../database').initializeDatabase();
+        dbInstance = database;
+      }
+      this.SyncLog = dbInstance.models.SyncLog;
+      this.initialized = true;
+      logger.info('SyncLogService initialized');
     } catch (error) {
       logger.error('Failed to initialize SyncLogService', { error: error.message });
       // Continue without database logging if it fails
