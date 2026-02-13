@@ -4,6 +4,11 @@ const { config, validateConfig } = require('./config');
 const { handleWebhook } = require('./handlers/webhook');
 const logger = require('./utils/logger');
 const BigCommerceClient = require('./clients/bigcommerce');
+const { initializeDatabase, closeDatabase } = require('./database');
+const { initializeQueues, closeQueues } = require('./queue');
+const syncLogService = require('./services/syncLog');
+const mappingService = require('./services/mapping');
+const adminApi = require('./admin');
 
 // Validate configuration on startup
 try {
@@ -13,6 +18,23 @@ try {
   logger.error('Configuration validation failed', { error: error.message });
   process.exit(1);
 }
+
+// Initialize database
+initializeDatabase()
+  .then(async () => {
+    logger.info('Database initialized successfully');
+    // Initialize services that depend on database
+    await syncLogService.initialize();
+    await mappingService.initialize();
+  })
+  .catch((error) => {
+    logger.warn('Database initialization failed, continuing without database', {
+      error: error.message,
+    });
+  });
+
+// Initialize queue system
+initializeQueues();
 
 const app = express();
 
@@ -59,6 +81,12 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Admin API routes
+if (config.admin.enabled) {
+  app.use('/admin', adminApi);
+  logger.info('Admin API enabled at /admin');
+}
+
 // Webhook endpoint
 app.post('/webhook', handleWebhook);
 
@@ -88,7 +116,9 @@ const server = app.listen(PORT, () => {
 // Graceful shutdown
 process.on('SIGTERM', () => {
   logger.info('SIGTERM received, shutting down gracefully');
-  server.close(() => {
+  server.close(async () => {
+    await closeQueues();
+    await closeDatabase();
     logger.info('Server closed');
     process.exit(0);
   });
@@ -96,7 +126,9 @@ process.on('SIGTERM', () => {
 
 process.on('SIGINT', () => {
   logger.info('SIGINT received, shutting down gracefully');
-  server.close(() => {
+  server.close(async () => {
+    await closeQueues();
+    await closeDatabase();
     logger.info('Server closed');
     process.exit(0);
   });

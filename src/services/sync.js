@@ -2,6 +2,7 @@ const BigCommerceClient = require('../clients/bigcommerce');
 const HubSpotClient = require('../clients/hubspot');
 const { mapCustomerToContact, mapOrderToDeal, mapCartToDeal } = require('./mapper');
 const logger = require('../utils/logger');
+const syncLogService = require('./syncLog');
 
 class SyncService {
   constructor() {
@@ -10,13 +11,30 @@ class SyncService {
   }
 
   /**
+   * Initialize sync service
+   */
+  async initialize() {
+    await syncLogService.initialize();
+    logger.info('SyncService initialized');
+  }
+
+  /**
    * Sync a completed order from BigCommerce to HubSpot
    * @param {Number} orderId - BigCommerce order ID
    * @returns {Promise<Object>} - Sync result
    */
   async syncOrder(orderId) {
+    let syncLog = null;
     try {
       logger.info(`Starting order sync for order ${orderId}`);
+
+      // Create sync log
+      syncLog = await syncLogService.createLog({
+        syncType: 'order',
+        direction: 'bc_to_hs',
+        entityType: 'order',
+        entityId: orderId.toString(),
+      });
 
       // Fetch order details from BigCommerce
       const order = await this.bigcommerceClient.getOrder(orderId);
@@ -59,6 +77,11 @@ class SyncService {
         dealId,
       });
 
+      // Log success
+      if (syncLog) {
+        await syncLogService.logSuccess(syncLog.id, { contactId, dealId });
+      }
+
       return {
         success: true,
         orderId,
@@ -70,6 +93,12 @@ class SyncService {
         error: error.message,
         stack: error.stack,
       });
+
+      // Log failure
+      if (syncLog) {
+        await syncLogService.logFailure(syncLog.id, error);
+      }
+
       throw error;
     }
   }
@@ -80,8 +109,17 @@ class SyncService {
    * @returns {Promise<Object>} - Sync result
    */
   async syncAbandonedCart(cartId) {
+    let syncLog = null;
     try {
       logger.info(`Starting abandoned cart sync for cart ${cartId}`);
+
+      // Create sync log
+      syncLog = await syncLogService.createLog({
+        syncType: 'abandoned_cart',
+        direction: 'bc_to_hs',
+        entityType: 'cart',
+        entityId: cartId.toString(),
+      });
 
       // Fetch cart details from BigCommerce
       const cart = await this.bigcommerceClient.getCart(cartId);
@@ -123,6 +161,11 @@ class SyncService {
         dealId,
       });
 
+      // Log success
+      if (syncLog) {
+        await syncLogService.logSuccess(syncLog.id, { contactId, dealId });
+      }
+
       return {
         success: true,
         cartId,
@@ -134,6 +177,12 @@ class SyncService {
         error: error.message,
         stack: error.stack,
       });
+
+      // Log failure
+      if (syncLog) {
+        await syncLogService.logFailure(syncLog.id, error);
+      }
+
       throw error;
     }
   }

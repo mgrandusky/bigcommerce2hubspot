@@ -1,0 +1,25 @@
+# Docker Compose for Development
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - DB_DIALECT=sqlite
+      - DB_STORAGE=/app/data/database.sqlite
+      - QUEUE_ENABLED=false
+      - CACHE_ENABLED=false
+      - LOG_LEVEL=debug
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - ./data:/app/data
+      - ./logs:/app/logs
+    command: npm run dev
+    restart: unless-stopped

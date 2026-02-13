@@ -114,6 +114,79 @@ class BigCommerceClient {
 
     return hash === signature;
   }
+
+  /**
+   * Search customers by criteria
+   * @param {Object} criteria - Search criteria (email, name, etc.)
+   * @returns {Promise<Array>} - Matching customers
+   */
+  async searchCustomers(criteria) {
+    return retryWithBackoff(
+      async () => {
+        logger.info('Searching customers in BigCommerce', { criteria });
+        
+        const params = {};
+        if (criteria.email) {
+          params['email:in'] = criteria.email;
+        }
+        
+        const response = await this.client.get('/customers', { params });
+        return response.data;
+      },
+      config.retry.maxAttempts,
+      config.retry.delayMs,
+      'Search customers'
+    );
+  }
+
+  /**
+   * Update customer
+   * @param {Number} customerId - Customer ID
+   * @param {Object} customerData - Customer data to update
+   * @returns {Promise<Object>} - Updated customer
+   */
+  async updateCustomer(customerId, customerData) {
+    return retryWithBackoff(
+      async () => {
+        logger.info(`Updating customer ${customerId} in BigCommerce`);
+        const response = await this.client.put(`/customers/${customerId}`, customerData);
+        return response.data;
+      },
+      config.retry.maxAttempts,
+      config.retry.delayMs,
+      `Update customer ${customerId}`
+    );
+  }
+
+  /**
+   * Update order status
+   * @param {Number} orderId - Order ID
+   * @param {String} status - New order status
+   * @returns {Promise<Object>} - Updated order
+   */
+  async updateOrderStatus(orderId, status) {
+    return retryWithBackoff(
+      async () => {
+        logger.info(`Updating order ${orderId} status to ${status}`);
+        const response = await this.client.put(`/orders/${orderId}`, {
+          status_id: this.getStatusId(status),
+        });
+        return response.data;
+      },
+      config.retry.maxAttempts,
+      config.retry.delayMs,
+      `Update order status ${orderId}`
+    );
+  }
+
+  /**
+   * Map status name to status ID
+   * @param {String} statusName - Status name
+   * @returns {Number} - Status ID
+   */
+  getStatusId(statusName) {
+    return BC_STATUS_MAP[statusName] || 1; // Default to Pending
+  }
 }
 
 module.exports = BigCommerceClient;
