@@ -4,6 +4,8 @@ const { config, validateConfig } = require('./config');
 const { handleWebhook } = require('./handlers/webhook');
 const logger = require('./utils/logger');
 const BigCommerceClient = require('./clients/bigcommerce');
+const { initializeDatabase, closeDatabase } = require('./database');
+const adminApi = require('./admin');
 
 // Validate configuration on startup
 try {
@@ -13,6 +15,17 @@ try {
   logger.error('Configuration validation failed', { error: error.message });
   process.exit(1);
 }
+
+// Initialize database
+initializeDatabase()
+  .then(() => {
+    logger.info('Database initialized successfully');
+  })
+  .catch((error) => {
+    logger.warn('Database initialization failed, continuing without database', {
+      error: error.message,
+    });
+  });
 
 const app = express();
 
@@ -59,6 +72,12 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Admin API routes
+if (config.admin.enabled) {
+  app.use('/admin', adminApi);
+  logger.info('Admin API enabled at /admin');
+}
+
 // Webhook endpoint
 app.post('/webhook', handleWebhook);
 
@@ -89,16 +108,20 @@ const server = app.listen(PORT, () => {
 process.on('SIGTERM', () => {
   logger.info('SIGTERM received, shutting down gracefully');
   server.close(() => {
-    logger.info('Server closed');
-    process.exit(0);
+    closeDatabase().then(() => {
+      logger.info('Server closed');
+      process.exit(0);
+    });
   });
 });
 
 process.on('SIGINT', () => {
   logger.info('SIGINT received, shutting down gracefully');
   server.close(() => {
-    logger.info('Server closed');
-    process.exit(0);
+    closeDatabase().then(() => {
+      logger.info('Server closed');
+      process.exit(0);
+    });
   });
 });
 

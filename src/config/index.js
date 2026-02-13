@@ -38,6 +38,42 @@ const config = {
   logging: {
     level: process.env.LOG_LEVEL || 'info',
   },
+
+  // Database configuration
+  database: {
+    dialect: process.env.DB_DIALECT || 'sqlite',
+    storage: process.env.DB_STORAGE || './data/database.sqlite',
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT,
+    database: process.env.DB_NAME,
+    username: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    logging: process.env.DB_LOGGING === 'true',
+  },
+
+  // Queue configuration (Redis)
+  queue: {
+    enabled: process.env.QUEUE_ENABLED === 'true',
+    redis: {
+      host: process.env.REDIS_HOST || 'localhost',
+      port: parseInt(process.env.REDIS_PORT) || 6379,
+      password: process.env.REDIS_PASSWORD,
+      db: parseInt(process.env.REDIS_DB) || 0,
+    },
+  },
+
+  // Cache configuration
+  cache: {
+    enabled: process.env.CACHE_ENABLED === 'true',
+    ttl: parseInt(process.env.CACHE_TTL) || 3600, // seconds
+  },
+
+  // Admin interface configuration
+  admin: {
+    enabled: process.env.ADMIN_ENABLED !== 'false',
+    jwtSecret: process.env.JWT_SECRET || 'change-this-secret-in-production',
+    jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
+  },
 };
 
 // Validate required configuration

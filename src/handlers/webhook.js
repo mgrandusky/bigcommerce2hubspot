@@ -3,6 +3,11 @@ const logger = require('../utils/logger');
 
 const syncService = new SyncService();
 
+// Initialize the sync service
+syncService.initialize().catch((error) => {
+  logger.error('Failed to initialize sync service', { error: error.message });
+});
+
 /**
  * Handle order created webhook
  * @param {Object} req - Express request object
