@@ -43,7 +43,12 @@ app.get('/health', (req, res) => {
 // Webhook endpoint
 app.post('/webhook', handleWebhook);
 
-// Error handling middleware
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({ error: 'Not found' });
+});
+
+// Error handling middleware (must be after all other middleware and routes)
 app.use((err, req, res, next) => {
   logger.error('Unhandled error', {
     error: err.message,
@@ -52,11 +57,6 @@ app.use((err, req, res, next) => {
     method: req.method,
   });
   res.status(500).json({ error: 'Internal server error' });
-});
-
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ error: 'Not found' });
 });
 
 // Start server

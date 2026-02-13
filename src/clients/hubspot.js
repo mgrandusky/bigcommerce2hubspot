@@ -44,10 +44,10 @@ class HubSpotClient {
         logger.info(`Creating/updating HubSpot contact for ${email}`);
 
         try {
-          // Try to find existing contact by email
-          const searchResponse = await this.client.post('/contacts/v1/contact/email', {
-            email,
-          });
+          // Try to find existing contact by email using correct endpoint
+          const searchResponse = await this.client.get(
+            `/contacts/v1/contact/email/${encodeURIComponent(email)}/profile`
+          );
 
           if (searchResponse.data && searchResponse.data.vid) {
             // Update existing contact
