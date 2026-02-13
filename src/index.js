@@ -1,4 +1,5 @@
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const { config, validateConfig } = require('./config');
 const { handleWebhook } = require('./handlers/webhook');
 const logger = require('./utils/logger');
@@ -15,10 +16,28 @@ try {
 
 const app = express();
 
+// Rate limiting for webhook endpoint
+const webhookLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute window
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    logger.warn('Rate limit exceeded', {
+      ip: req.ip,
+      url: req.url,
+    });
+    res.status(429).json({
+      error: 'Too many requests, please try again later.',
+    });
+  },
+});
+
 // Middleware for webhook signature verification
 const bigcommerceClient = new BigCommerceClient();
 
-app.use('/webhook', express.raw({ type: 'application/json' }), (req, res, next) => {
+app.use('/webhook', webhookLimiter, express.raw({ type: 'application/json' }), (req, res, next) => {
   const signature = req.headers['x-bc-webhook-signature'];
   const payload = req.body.toString('utf8');
 
