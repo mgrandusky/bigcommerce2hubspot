@@ -212,6 +212,106 @@ class HubSpotClient {
 
     return properties;
   }
+
+  /**
+   * Get a HubSpot contact by ID
+   * @param {Number} contactId - HubSpot contact ID (vid)
+   * @returns {Promise<Object>} - Contact data
+   */
+  async getContact(contactId) {
+    return retryWithBackoff(
+      async () => {
+        logger.info(`Fetching HubSpot contact ${contactId}`);
+        const response = await this.client.get(`/contacts/v1/contact/vid/${contactId}/profile`);
+        return response.data;
+      },
+      config.retry.maxAttempts,
+      config.retry.delayMs,
+      `Get contact ${contactId}`
+    );
+  }
+
+  /**
+   * Get a HubSpot deal by ID
+   * @param {Number} dealId - HubSpot deal ID
+   * @returns {Promise<Object>} - Deal data
+   */
+  async getDeal(dealId) {
+    return retryWithBackoff(
+      async () => {
+        logger.info(`Fetching HubSpot deal ${dealId}`);
+        const response = await this.client.get(`/deals/v1/deal/${dealId}`);
+        return response.data;
+      },
+      config.retry.maxAttempts,
+      config.retry.delayMs,
+      `Get deal ${dealId}`
+    );
+  }
+
+  /**
+   * Update a HubSpot deal
+   * @param {Number} dealId - HubSpot deal ID
+   * @param {Object} dealData - Deal properties to update
+   * @returns {Promise<Object>} - Updated deal
+   */
+  async updateDeal(dealId, dealData) {
+    return retryWithBackoff(
+      async () => {
+        logger.info(`Updating HubSpot deal ${dealId}`);
+        const response = await this.client.put(`/deals/v1/deal/${dealId}`, {
+          properties: this._formatDealProperties(dealData),
+        });
+        return response.data;
+      },
+      config.retry.maxAttempts,
+      config.retry.delayMs,
+      `Update deal ${dealId}`
+    );
+  }
+
+  /**
+   * Add contact to a list
+   * @param {Number} listId - HubSpot list ID
+   * @param {Number} contactId - HubSpot contact ID (vid)
+   * @returns {Promise<Object>} - Result
+   */
+  async addContactToList(listId, contactId) {
+    return retryWithBackoff(
+      async () => {
+        logger.info(`Adding contact ${contactId} to list ${listId}`);
+        const response = await this.client.post(
+          `/contacts/v1/lists/${listId}/add`,
+          { vids: [contactId] }
+        );
+        return response.data;
+      },
+      config.retry.maxAttempts,
+      config.retry.delayMs,
+      `Add contact to list`
+    );
+  }
+
+  /**
+   * Create a timeline event
+   * @param {Object} eventData - Timeline event data
+   * @returns {Promise<Object>} - Created event
+   */
+  async createTimelineEvent(eventData) {
+    return retryWithBackoff(
+      async () => {
+        logger.info(`Creating timeline event: ${eventData.eventTypeId}`);
+        const response = await this.client.put(
+          `/integrations/v1/${eventData.appId}/timeline/event`,
+          eventData
+        );
+        return response.data;
+      },
+      config.retry.maxAttempts,
+      config.retry.delayMs,
+      'Create timeline event'
+    );
+  }
 }
 
 module.exports = HubSpotClient;
