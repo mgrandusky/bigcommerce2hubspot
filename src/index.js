@@ -5,6 +5,7 @@ const { handleWebhook } = require('./handlers/webhook');
 const logger = require('./utils/logger');
 const BigCommerceClient = require('./clients/bigcommerce');
 const { initializeDatabase, closeDatabase } = require('./database');
+const { initializeQueues, closeQueues } = require('./queue');
 const adminApi = require('./admin');
 
 // Validate configuration on startup
@@ -26,6 +27,9 @@ initializeDatabase()
       error: error.message,
     });
   });
+
+// Initialize queue system
+initializeQueues();
 
 const app = express();
 
@@ -107,21 +111,21 @@ const server = app.listen(PORT, () => {
 // Graceful shutdown
 process.on('SIGTERM', () => {
   logger.info('SIGTERM received, shutting down gracefully');
-  server.close(() => {
-    closeDatabase().then(() => {
-      logger.info('Server closed');
-      process.exit(0);
-    });
+  server.close(async () => {
+    await closeQueues();
+    await closeDatabase();
+    logger.info('Server closed');
+    process.exit(0);
   });
 });
 
 process.on('SIGINT', () => {
   logger.info('SIGINT received, shutting down gracefully');
-  server.close(() => {
-    closeDatabase().then(() => {
-      logger.info('Server closed');
-      process.exit(0);
-    });
+  server.close(async () => {
+    await closeQueues();
+    await closeDatabase();
+    logger.info('Server closed');
+    process.exit(0);
   });
 });
 
