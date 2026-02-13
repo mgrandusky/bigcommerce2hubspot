@@ -1,0 +1,11 @@
+{
+  "scope": "store/cart/abandoned",
+  "store_id": "1025646",
+  "data": {
+    "type": "cart",
+    "id": "09346904-4175-44fd-be53-f7e598531b6c"
+  },
+  "hash": "8c9ea420af83450d7ef9f78b08c8af25b2213638",
+  "created_at": 1561479500,
+  "producer": "stores/abc123"
+}
